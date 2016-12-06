@@ -22,6 +22,7 @@ Partial Class Form1
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
+        Me.components = New System.ComponentModel.Container()
         Me.Label2 = New System.Windows.Forms.Label()
         Me.playBtn = New System.Windows.Forms.Button()
         Me.songProgressBar = New System.Windows.Forms.ProgressBar()
@@ -31,6 +32,7 @@ Partial Class Form1
         Me.totalSongLength = New System.Windows.Forms.Label()
         Me.TrackLabel = New System.Windows.Forms.Label()
         Me.TrackNames = New System.Windows.Forms.ListBox()
+        Me.SerialPort1 = New System.IO.Ports.SerialPort(Me.components)
         Me.SuspendLayout()
         '
         'Label2
@@ -129,6 +131,10 @@ Partial Class Form1
         Me.TrackNames.Size = New System.Drawing.Size(432, 199)
         Me.TrackNames.TabIndex = 8
         '
+        'SerialPort1
+        '
+        Me.SerialPort1.PortName = "COM5"
+        '
         'Form1
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
@@ -159,4 +165,5 @@ Partial Class Form1
     Friend WithEvents totalSongLength As Label
     Friend WithEvents TrackLabel As Label
     Friend WithEvents TrackNames As ListBox
+    Friend WithEvents SerialPort1 As IO.Ports.SerialPort
 End Class
