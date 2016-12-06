@@ -25,11 +25,6 @@ Partial Class Form1
         Me.components = New System.ComponentModel.Container()
         Me.Label2 = New System.Windows.Forms.Label()
         Me.playBtn = New System.Windows.Forms.Button()
-        Me.songProgressBar = New System.Windows.Forms.ProgressBar()
-        Me.backBtn = New System.Windows.Forms.Button()
-        Me.nextBtn = New System.Windows.Forms.Button()
-        Me.currentSongTime = New System.Windows.Forms.Label()
-        Me.totalSongLength = New System.Windows.Forms.Label()
         Me.TrackLabel = New System.Windows.Forms.Label()
         Me.TrackNames = New System.Windows.Forms.ListBox()
         Me.SerialPort1 = New System.IO.Ports.SerialPort(Me.components)
@@ -58,60 +53,6 @@ Partial Class Form1
         Me.playBtn.Text = "Play"
         Me.playBtn.UseVisualStyleBackColor = True
         '
-        'songProgressBar
-        '
-        Me.songProgressBar.ForeColor = System.Drawing.Color.Lime
-        Me.songProgressBar.Location = New System.Drawing.Point(12, 251)
-        Me.songProgressBar.Name = "songProgressBar"
-        Me.songProgressBar.Size = New System.Drawing.Size(436, 12)
-        Me.songProgressBar.TabIndex = 3
-        '
-        'backBtn
-        '
-        Me.backBtn.AccessibleName = "backBtn"
-        Me.backBtn.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom), System.Windows.Forms.AnchorStyles)
-        Me.backBtn.Font = New System.Drawing.Font("Microsoft Sans Serif", 10.0!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.backBtn.Location = New System.Drawing.Point(145, 269)
-        Me.backBtn.Name = "backBtn"
-        Me.backBtn.Size = New System.Drawing.Size(38, 33)
-        Me.backBtn.TabIndex = 5
-        Me.backBtn.Text = "<"
-        Me.backBtn.UseVisualStyleBackColor = True
-        '
-        'nextBtn
-        '
-        Me.nextBtn.AccessibleName = "forwardBtn"
-        Me.nextBtn.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom), System.Windows.Forms.AnchorStyles)
-        Me.nextBtn.Font = New System.Drawing.Font("Microsoft Sans Serif", 10.0!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.nextBtn.Location = New System.Drawing.Point(270, 269)
-        Me.nextBtn.Name = "nextBtn"
-        Me.nextBtn.Size = New System.Drawing.Size(38, 33)
-        Me.nextBtn.TabIndex = 4
-        Me.nextBtn.Text = ">"
-        Me.nextBtn.UseVisualStyleBackColor = True
-        '
-        'currentSongTime
-        '
-        Me.currentSongTime.AutoSize = True
-        Me.currentSongTime.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.currentSongTime.ForeColor = System.Drawing.Color.White
-        Me.currentSongTime.Location = New System.Drawing.Point(13, 235)
-        Me.currentSongTime.Name = "currentSongTime"
-        Me.currentSongTime.Size = New System.Drawing.Size(32, 13)
-        Me.currentSongTime.TabIndex = 6
-        Me.currentSongTime.Text = "0:00"
-        '
-        'totalSongLength
-        '
-        Me.totalSongLength.AutoSize = True
-        Me.totalSongLength.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.totalSongLength.ForeColor = System.Drawing.Color.White
-        Me.totalSongLength.Location = New System.Drawing.Point(416, 235)
-        Me.totalSongLength.Name = "totalSongLength"
-        Me.totalSongLength.Size = New System.Drawing.Size(32, 13)
-        Me.totalSongLength.TabIndex = 7
-        Me.totalSongLength.Text = "0:00"
-        '
         'TrackLabel
         '
         Me.TrackLabel.AutoSize = True
@@ -128,7 +69,7 @@ Partial Class Form1
         Me.TrackNames.FormattingEnabled = True
         Me.TrackNames.Location = New System.Drawing.Point(16, 30)
         Me.TrackNames.Name = "TrackNames"
-        Me.TrackNames.Size = New System.Drawing.Size(432, 199)
+        Me.TrackNames.Size = New System.Drawing.Size(432, 225)
         Me.TrackNames.TabIndex = 8
         '
         'SerialPort1
@@ -142,11 +83,6 @@ Partial Class Form1
         Me.BackColor = System.Drawing.Color.FromArgb(CType(CType(0, Byte), Integer), CType(CType(0, Byte), Integer), CType(CType(192, Byte), Integer))
         Me.ClientSize = New System.Drawing.Size(460, 322)
         Me.Controls.Add(Me.TrackNames)
-        Me.Controls.Add(Me.totalSongLength)
-        Me.Controls.Add(Me.currentSongTime)
-        Me.Controls.Add(Me.backBtn)
-        Me.Controls.Add(Me.nextBtn)
-        Me.Controls.Add(Me.songProgressBar)
         Me.Controls.Add(Me.playBtn)
         Me.Controls.Add(Me.Label2)
         Me.Controls.Add(Me.TrackLabel)
@@ -158,11 +94,6 @@ Partial Class Form1
     End Sub
     Friend WithEvents Label2 As Label
     Friend WithEvents playBtn As Button
-    Friend WithEvents songProgressBar As ProgressBar
-    Friend WithEvents backBtn As Button
-    Friend WithEvents nextBtn As Button
-    Friend WithEvents currentSongTime As Label
-    Friend WithEvents totalSongLength As Label
     Friend WithEvents TrackLabel As Label
     Friend WithEvents TrackNames As ListBox
     Friend WithEvents SerialPort1 As IO.Ports.SerialPort
