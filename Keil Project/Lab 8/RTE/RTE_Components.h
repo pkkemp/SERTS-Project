@@ -43,7 +43,6 @@
 #define RTE_Drivers_USBH0               /* Driver USBH0 */
 #define RTE_FileSystem_Core             /* File System Core */
           #define RTE_FileSystem_LFN              /* File System with Long Filename support */
-          #define RTE_FileSystem_Release          /* File System Release Version */
 #define RTE_FileSystem_Drive_USB_0      /* File System USB Drive 0 */
 #define RTE_USB_Core                    /* USB Core */
 #define RTE_USB_Host_0                  /* USB Host 0 */

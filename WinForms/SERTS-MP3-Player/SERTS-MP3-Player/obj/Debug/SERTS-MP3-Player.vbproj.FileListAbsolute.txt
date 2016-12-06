@@ -1,1 +1,12 @@
 C:\Users\Preston\Documents\GitHub\SERTS-Project\WinForms\SERTS-MP3-Player\SERTS-MP3-Player\bin\Debug\SERTS-MP3-Player.exe.config
+C:\Users\preston.kemp\Documents\GitHub\SERTS-Project\WinForms\SERTS-MP3-Player\SERTS-MP3-Player\bin\Debug\SERTS-MP3-Player.exe.config
+C:\Users\preston.kemp\Documents\GitHub\SERTS-Project\WinForms\SERTS-MP3-Player\SERTS-MP3-Player\obj\Debug\SERTS-MP3-Player.vbprojResolveAssemblyReference.cache
+C:\Users\preston.kemp\Documents\GitHub\SERTS-Project\WinForms\SERTS-MP3-Player\SERTS-MP3-Player\obj\Debug\SERTS_MP3_Player.Resources.resources
+C:\Users\preston.kemp\Documents\GitHub\SERTS-Project\WinForms\SERTS-MP3-Player\SERTS-MP3-Player\obj\Debug\SERTS-MP3-Player.vbproj.GenerateResource.Cache
+C:\Users\preston.kemp\Documents\GitHub\SERTS-Project\WinForms\SERTS-MP3-Player\SERTS-MP3-Player\obj\Debug\SERTS-MP3-Player.xml
+C:\Users\preston.kemp\Documents\GitHub\SERTS-Project\WinForms\SERTS-MP3-Player\SERTS-MP3-Player\bin\Debug\SERTS-MP3-Player.exe
+C:\Users\preston.kemp\Documents\GitHub\SERTS-Project\WinForms\SERTS-MP3-Player\SERTS-MP3-Player\bin\Debug\SERTS-MP3-Player.pdb
+C:\Users\preston.kemp\Documents\GitHub\SERTS-Project\WinForms\SERTS-MP3-Player\SERTS-MP3-Player\bin\Debug\SERTS-MP3-Player.xml
+C:\Users\preston.kemp\Documents\GitHub\SERTS-Project\WinForms\SERTS-MP3-Player\SERTS-MP3-Player\obj\Debug\SERTS-MP3-Player.exe
+C:\Users\preston.kemp\Documents\GitHub\SERTS-Project\WinForms\SERTS-MP3-Player\SERTS-MP3-Player\obj\Debug\SERTS-MP3-Player.pdb
+C:\Users\preston.kemp\Documents\GitHub\SERTS-Project\WinForms\SERTS-MP3-Player\SERTS-MP3-Player\obj\Debug\SERTS_MP3_Player.Form1.resources
