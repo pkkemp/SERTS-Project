@@ -44,6 +44,11 @@ osSemaphoreId(Sem_id);
 
 uint8_t buf2use = 2;
 
+// Action Definitions
+#define getFiles 0
+#define play 1
+#define pause 2
+
 // WAVE file header format
 typedef struct WAVHEADER {
 	unsigned char riff[4];						// RIFF string
@@ -82,6 +87,12 @@ void Thread (void const *argument) {
 	static uint8_t rtrn = 0;
 	uint8_t rdnum = 1; // read buffer number
 	ustatus = USBH_Initialize (drivenum); // initialize the USB Host
+	
+	fsFileInfo info;
+	static FILE *f;
+	info.fileID = 0;
+	
+	int action;
 
 	if (ustatus == usbOK){
 		// loop until the device is OK, may be delay from Initialize
@@ -89,56 +100,68 @@ void Thread (void const *argument) {
 		while(ustatus != usbOK){
 			ustatus = USBH_Device_GetStatus (drivenum); // get the status of the USB device
 		}
-
 		// initialize the drive
 		fstatus = finit (drive_name);
-
 		if (fstatus != fsOK){
 			// handle the error, finit didn't work
 		} // end if
-
 		// Mount the drive
 		fstatus = fmount (drive_name);
 		if (fstatus != fsOK){
 			// handle the error, fmount didn't work
 		} // end if
 		// file system and drive are good to go
-
-		f = fopen ("Test.wav","r"); // open a file on the USB device
-
-		if (f != NULL) {
-			fread((void *)&header, sizeof(header), 1, f);
-		} // end if file opened
 	} // end if USBH_Initialize
-
-
 
 	// initialize the audio output
 	rtrn = BSP_AUDIO_OUT_Init(OUTPUT_DEVICE_AUTO, 0x46, 44100);
 	if (rtrn != AUDIO_OK)return;
-
-	fread((void *)Audio_Buffer1, BUF_LEN, 1, f);
-
-	BSP_AUDIO_OUT_Play((uint16_t *)Audio_Buffer1, 2*BUF_LEN*2);
-
-	// generate data for the audio buffe
-	while(!feof(f))
-	{
-		if(buf2use == 1)
+	
+	while(1)
+	{	
+		//Receive Action
+		//char r_data[2] = {0,0};
+		//UART_receive(r_data, 1);
+		
+		action = 0;
+		
+		if(action == getFiles)
 		{
-			fread((void *)Audio_Buffer1, 2*BUF_LEN, 1, f);
-			osMessagePut(mid_MsqQueue, buf2use, osWaitForever);
-			buf2use = 2;
+			while (ffind ("U0:*.*", &info) == fsOK) 
+			{ 
+				UART_send(info.name,strlen(info.name));
+				UART_send("\n\r",2);
+			}
 		}
-		else
-        {
-			fread((void *)Audio_Buffer2, 2*BUF_LEN, 1, f);
-			osMessagePut(mid_MsqQueue, buf2use, osWaitForever);
-			buf2use = 1;
+		else if(action == play)
+		{
+			f = fopen ("Test.wav","r"); // open a file on the USB device
+			if (f != NULL) {
+				fread((void *)&header, sizeof(header), 1, f);
+			} // end if file opened
+				
+			fread((void *)Audio_Buffer1, BUF_LEN, 1, f);
+			BSP_AUDIO_OUT_Play((uint16_t *)Audio_Buffer1, 2*BUF_LEN*2);
+			
+			while(!feof(f))
+			{
+				if(buf2use == 1)
+				{
+					fread((void *)Audio_Buffer1, 2*BUF_LEN, 1, f);
+					osMessagePut(mid_MsqQueue, buf2use, osWaitForever);
+					buf2use = 2;
+				}
+				else
+						{
+					fread((void *)Audio_Buffer2, 2*BUF_LEN, 1, f);
+					osMessagePut(mid_MsqQueue, buf2use, osWaitForever);
+					buf2use = 1;
+				}
+				osSemaphoreWait(Sem_id, osWaitForever);
+			}
+			BSP_AUDIO_OUT_SetMute(AUDIO_MUTE_ON);
 		}
-		osSemaphoreWait(Sem_id, osWaitForever);
 	}
-	BSP_AUDIO_OUT_SetMute(AUDIO_MUTE_ON);
 }
 
 /* User Callbacks: user has to implement these functions in his code if they are needed. */
