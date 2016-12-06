@@ -1,8 +1,5 @@
 ﻿Imports System.Threading
 
-
-
-
 Public Class Form1
     ' This is a definition of a thread. The thread object is Thread_0 and
     ' it uses the method Thread_0_method() below as its code.
@@ -11,7 +8,6 @@ Public Class Form1
     Delegate Sub ListBoxDelegate(ByVal myStr As String)
 
     Dim Thread_0 As New Thread(AddressOf Thread_0_method)
-
     ' This makes an instance of the delegate that points to the address
     ' of the InvokeMethod function. When the delegate is invoked it will
     ' run the InvokeMethod method on the thread that owns the window handle.
@@ -20,15 +16,7 @@ Public Class Form1
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         'Serial Port initialize
         Try
-            Dim str As String
-            Dim c As Integer
             SerialPort1.Open()
-            str = ""
-            'str = SerialPort1.ReadLine()
-            While str = SerialPort1.ReadLine()
-                TrackNames.Invoke(ListBoxDel, str)
-            End While
-
         Catch
             MessageBox.Show("Failed to open serial port", "Audio Player",
            MessageBoxButtons.OKCancel, MessageBoxIcon.Asterisk)
@@ -47,16 +35,19 @@ Public Class Form1
             'Thread code goes here
             Dim str As String
             Dim c As Integer
-            str = SerialPort1.ReadLine()
-
+            str = ""
+            'str = SerialPort1.ReadLine()
+            SerialPort1.WriteLine("R")
+            While str = SerialPort1.ReadLine()
+                TrackNames.Invoke(ListBoxDel, str)
+            End While
+            ' str = SerialPort1.ReadLine()
             TrackNames.Invoke(ListBoxDel, str)
         End While
     End Sub
     Public Sub ListBoxDelMethod(ByVal myStr As String)
         TrackNames.Items.Add(myStr)
     End Sub
-
-
     Private Sub TrackNames_SelectedIndexChanged(sender As Object, e As EventArgs) Handles TrackNames.SelectedIndexChanged
 
     End Sub
