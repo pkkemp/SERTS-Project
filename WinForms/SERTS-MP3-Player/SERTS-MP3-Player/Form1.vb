@@ -37,7 +37,8 @@ Public Class Form1
             Dim c As Integer
             str = ""
             'str = SerialPort1.ReadLine()
-            SerialPort1.WriteLine("R")
+            'SerialPort1.WriteLine("R")
+            SerialPort1.Write("R", 0, 1)
             While str = SerialPort1.ReadLine()
                 TrackNames.Invoke(ListBoxDel, str)
             End While
