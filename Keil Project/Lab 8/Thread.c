@@ -120,17 +120,19 @@ void Thread (void const *argument) {
 	while(1)
 	{	
 		//Receive Action
-		//char r_data[2] = {0,0};
-		//UART_receive(r_data, 1);
+		char r_data[2] = {0,0};
+		UART_receive(r_data, 1);
 		
 		action = 0;
 		
 		if(action == getFiles)
 		{
-			while (ffind ("U0:*.*", &info) == fsOK) 
-			{ 
-				UART_send(info.name,strlen(info.name));
-				UART_send("\n\r",2);
+			if(!strcmp(r_data,"R")){
+				while (ffind ("U0:*.*", &info) == fsOK) 
+				{ 
+					UART_send(info.name,strlen(info.name));
+					UART_send("\n\r",2);
+				}
 			}
 		}
 		else if(action == play)
