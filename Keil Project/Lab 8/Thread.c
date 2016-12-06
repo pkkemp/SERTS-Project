@@ -133,6 +133,7 @@ void Thread (void const *argument) {
 					UART_send(info.name,strlen(info.name));
 					UART_send("\n\r",2);
 				}
+				UART_send("E",1);
 			}
 		}
 		else if(action == play)

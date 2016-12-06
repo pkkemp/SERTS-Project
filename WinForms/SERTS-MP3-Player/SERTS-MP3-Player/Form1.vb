@@ -31,20 +31,16 @@ Public Class Form1
         '  TrackNames.Items.Add("Testing")
     End Sub
     Private Sub Thread_0_method()
-        While 1
-            'Thread code goes here
-            Dim str As String
-            Dim c As Integer
-            str = ""
-            'str = SerialPort1.ReadLine()
-            'SerialPort1.WriteLine("R")
-            SerialPort1.Write("R", 0, 1)
-            While str = SerialPort1.ReadLine()
-                TrackNames.Invoke(ListBoxDel, str)
-            End While
-            ' str = SerialPort1.ReadLine()
-            TrackNames.Invoke(ListBoxDel, str)
-        End While
+        'Thread code goes here
+        Dim str As String
+        Dim c As Integer
+        str = ""
+
+        SerialPort1.Write("R", 0, 1)
+        Do
+            str = SerialPort1.ReadLine()
+            If Not (str = "E") Then TrackNames.Invoke(ListBoxDel, str)
+        Loop Until str = "E"
     End Sub
     Public Sub ListBoxDelMethod(ByVal myStr As String)
         TrackNames.Items.Add(myStr)
