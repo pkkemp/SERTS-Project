@@ -112,8 +112,6 @@ void ControlThread (void const *argument) {
 	fsFileInfo info;
 	static FILE *f;
 	info.fileID = 0;
-	
-	char action;
 
 	if (ustatus == usbOK){
 		// loop until the device is OK, may be delay from Initialize
@@ -141,15 +139,15 @@ void ControlThread (void const *argument) {
 	while(1)
 	{	
 		//Receive Action
-		char r_data[2] = {0,0};
-		UART_receive(r_data, 1);
+		char r_data;
+		UART_receive(&r_data, 1);
 		
-		action = getFiles;
+		char action = r_data;
 		
 		if(action == getFiles)
 		{
 			int index = 0;
-			if(!strcmp(r_data,"R")){
+			if(!strcmp(&r_data,"R")){
 				while (ffind ("U0:*.*", &info) == fsOK) 
 				{ 
 					UART_send(info.name,strlen(info.name));
