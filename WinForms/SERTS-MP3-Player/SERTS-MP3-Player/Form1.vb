@@ -1,6 +1,14 @@
 ﻿Imports System.Threading
 
 Public Class Form1
+    Public Enum States
+        PlayMusic
+        PauseMusic
+        StopMusic
+    End Enum
+    Dim play As String = "P"
+    Dim pause As String = "S"
+
     ' This is a definition of a thread. The thread object is Thread_0 and
     ' it uses the method Thread_0_method() below as its code.
 
@@ -41,11 +49,30 @@ Public Class Form1
             str = SerialPort1.ReadLine()
             If Not (str = "E") Then TrackNames.Invoke(ListBoxDel, str)
         Loop Until str = "E"
+
+
     End Sub
     Public Sub ListBoxDelMethod(ByVal myStr As String)
         TrackNames.Items.Add(myStr)
     End Sub
     Private Sub TrackNames_SelectedIndexChanged(sender As Object, e As EventArgs) Handles TrackNames.SelectedIndexChanged
-
+        'Send play command to keil board
+        SerialPort1.Write(play, 0, 1)
+        'Send track name to keil board
+        'SerialPort1.Write(TrackNames.SelectedItem.ToString())
+        SerialPort1.Write(TrackNames.SelectedIndex.ToString())
+    End Sub
+    Private Sub playBtn_Click(sender As Object, e As EventArgs) Handles playBtn.Click
+        If playBtn.Text = "Play" Then
+            'Change GUI button to paused
+            playBtn.Text = "Pause"
+            'Instruct board to pause playback
+            SerialPort1.Write(pause, 0, 1)
+        Else
+            'Change GUI button to play
+            playBtn.Text = "Play"
+            'Instruct the board to resume playback
+            SerialPort1.Write(play, 0, 1)
+        End If
     End Sub
 End Class
