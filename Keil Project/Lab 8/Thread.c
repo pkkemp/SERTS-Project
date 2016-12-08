@@ -25,29 +25,40 @@
 // pointer to file type for files on USB device
 FILE *f;
 
-void Thread (void const *argument);                             // thread function
+void ControlThread (void const *argument);   // thread function
+void PlayThread (void const *argument);	// Thread for play/pause
 
 int16_t Audio_Buffer1[BUF_LEN];
 int16_t Audio_Buffer2[BUF_LEN];
 int16_t Buff[NUM_POINTS];
 
-osThreadId tid_Thread;                                          // thread id
+// Thread Stuff -----------------------------------------
+osThreadId tid_ControlThread;                                          // thread id
+osThreadId tid_PlayThread;
 
-osThreadDef (Thread, osPriorityNormal, 1, 0);                   // thread object
+osThreadDef (ControlThread, osPriorityNormal, 1, 0);                   // thread object
+osThreadDef (PlayThread, osPriorityNormal, 1, 0);
 
-//Message Queue Things
+//Message Queue 1 Things -----------------------------
 osMessageQId mid_MsqQueue;
 osMessageQDef (MsgQueue, 1, uint32_t);
+
+//Message Queue for control object Things -----------------------------
+osMessageQId mid_ControlMsqQueue;
+osMessageQDef (ControlMsgQueue, 1, char[15]);
+
 
 osSemaphoreDef(Sem);
 osSemaphoreId(Sem_id);
 
 uint8_t buf2use = 2;
 
+char names[3][30];
+
 // Action Definitions
-#define getFiles 0
-#define play 1
-#define pause 2
+#define getFiles 'R'
+#define play 'P'
+#define pause 'S'
 
 // WAVE file header format
 typedef struct WAVHEADER {
@@ -67,21 +78,31 @@ typedef struct WAVHEADER {
 } WAVHEADER;
 
 void Init_Thread (void) {
+	
+	// Init LED and UART
 	LED_Initialize();
 	UART_Init();
-	tid_Thread = osThreadCreate (osThread(Thread), NULL);
+	
+	// Init threads
+	tid_ControlThread = osThreadCreate (osThread(ControlThread), NULL);
+	tid_PlayThread = osThreadCreate (osThread(PlayThread), NULL);
+	
+	// Init Message queues and semaphore
 	Sem_id = osSemaphoreCreate(osSemaphore(Sem), 0);
 	mid_MsqQueue = osMessageCreate(osMessageQ(MsgQueue), NULL);
-    if (!tid_Thread) return;
+	mid_ControlMsqQueue = osMessageCreate(osMessageQ(ControlMsgQueue), NULL);
+	
+  if (!tid_ControlThread) return;
+	if (!tid_PlayThread) return;
+	
 	LED_On(0);
 }
 
-void Thread (void const *argument) {
+void ControlThread (void const *argument) {
 	usbStatus ustatus; // USB driver status variable
 	uint8_t drivenum = 0; // Using U0: drive number
 	char *drive_name = "U0:"; // USB drive name
 	fsStatus fstatus; // file system status variable
-	WAVHEADER header;
 	size_t rd;
 	uint32_t i;
 	static uint8_t rtrn = 0;
@@ -92,7 +113,7 @@ void Thread (void const *argument) {
 	static FILE *f;
 	info.fileID = 0;
 	
-	int action;
+	char action;
 
 	if (ustatus == usbOK){
 		// loop until the device is OK, may be delay from Initialize
@@ -123,46 +144,79 @@ void Thread (void const *argument) {
 		char r_data[2] = {0,0};
 		UART_receive(r_data, 1);
 		
-		action = 0;
+		action = getFiles;
 		
 		if(action == getFiles)
 		{
+			int index = 0;
 			if(!strcmp(r_data,"R")){
 				while (ffind ("U0:*.*", &info) == fsOK) 
 				{ 
 					UART_send(info.name,strlen(info.name));
+					strcpy(names[index], info.name);
 					UART_send("\n\r",2);
+					index++;
 				}
 				UART_send("E",1);
 			}
 		}
 		else if(action == play)
 		{
-			f = fopen ("Test.wav","r"); // open a file on the USB device
-			if (f != NULL) {
-				fread((void *)&header, sizeof(header), 1, f);
-			} // end if file opened
-				
-			fread((void *)Audio_Buffer1, BUF_LEN, 1, f);
-			BSP_AUDIO_OUT_Play((uint16_t *)Audio_Buffer1, 2*BUF_LEN*2);
-			
-			while(!feof(f))
+			UART_send("P/n",2);
+			char songName[15];
+			UART_receive(songName, 1);
+			osMessagePut(mid_ControlMsqQueue, (uint32_t)songName, osWaitForever);
+		}
+		else if(action == pause)
+		{
+			osMessagePut(mid_ControlMsqQueue, (uint32_t)'S', osWaitForever);
+		}
+	}
+}
+
+void PlayThread (void const *argument) 
+{
+	WAVHEADER header;
+	
+	while(1)
+	{
+		osEvent event;
+		event = osMessageGet(mid_ControlMsqQueue, 0);
+		
+		if(event.status == osEventMessage)
+		{
+			if(event.value.v != (uint32_t)'S')
 			{
-				if(buf2use == 1)
+				f = fopen (names[event.value.v],"r"); // open a file on the USB device
+				if (f != NULL) {
+					fread((void *)&header, sizeof(header), 1, f);
+				} // end if file opened
+					
+				fread((void *)Audio_Buffer1, BUF_LEN, 1, f);
+				BSP_AUDIO_OUT_Play((uint16_t *)Audio_Buffer1, 2*BUF_LEN*2);
+
+				while(!feof(f))
 				{
-					fread((void *)Audio_Buffer1, 2*BUF_LEN, 1, f);
-					osMessagePut(mid_MsqQueue, buf2use, osWaitForever);
-					buf2use = 2;
+					if(buf2use == 1)
+					{
+						fread((void *)Audio_Buffer1, 2*BUF_LEN, 1, f);
+						osMessagePut(mid_MsqQueue, buf2use, osWaitForever);
+						buf2use = 2;
+					}
+					else
+					{
+						fread((void *)Audio_Buffer2, 2*BUF_LEN, 1, f);
+						osMessagePut(mid_MsqQueue, buf2use, osWaitForever);
+						buf2use = 1;
+					}
+					osSemaphoreWait(Sem_id, osWaitForever);
 				}
-				else
-						{
-					fread((void *)Audio_Buffer2, 2*BUF_LEN, 1, f);
-					osMessagePut(mid_MsqQueue, buf2use, osWaitForever);
-					buf2use = 1;
-				}
-				osSemaphoreWait(Sem_id, osWaitForever);
+				BSP_AUDIO_OUT_SetMute(AUDIO_MUTE_ON);
 			}
-			BSP_AUDIO_OUT_SetMute(AUDIO_MUTE_ON);
+		}
+		else
+		{
+			osThreadYield();
 		}
 	}
 }
