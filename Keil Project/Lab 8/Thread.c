@@ -26,7 +26,8 @@
 FILE *f;
 
 void ControlThread (void const *argument);   // thread function
-void PlayThread (void const *argument);	// Thread for play/pause
+void SMThread (void const *argument);	// Thread for play/pause
+void USBThread (void const *argument); // USB Thread
 
 int16_t Audio_Buffer1[BUF_LEN];
 int16_t Audio_Buffer2[BUF_LEN];
@@ -34,10 +35,12 @@ int16_t Buff[NUM_POINTS];
 
 // Thread Stuff -----------------------------------------
 osThreadId tid_ControlThread;                                          // thread id
-osThreadId tid_PlayThread;
+osThreadId tid_SMThread;
+osThreadId tid_USBThread;
 
 osThreadDef (ControlThread, osPriorityNormal, 1, 0);                   // thread object
-osThreadDef (PlayThread, osPriorityNormal, 1, 0);
+osThreadDef (SMThread, osPriorityNormal, 1, 0);
+osThreadDef (USBThread, osPriorityNormal, 1, 0);
 
 //Message Queue 1 Things -----------------------------
 osMessageQId mid_MsqQueue;
@@ -47,6 +50,10 @@ osMessageQDef (MsgQueue, 1, uint32_t);
 osMessageQId mid_ControlMsqQueue;
 osMessageQDef (ControlMsgQueue, 1, char[15]);
 
+//Message Queue 1 Things -----------------------------
+osMessageQId mid_SMMsqQueue;
+osMessageQDef (SMMsgQueue, 1, uint32_t);
+
 
 osSemaphoreDef(Sem);
 osSemaphoreId(Sem_id);
@@ -54,11 +61,12 @@ osSemaphoreId(Sem_id);
 uint8_t buf2use = 2;
 
 char names[3][30];
+char song;
 
 // Action Definitions
-#define getFiles 'R'
-#define play 'P'
-#define pause 'S'
+#define getFiles 0
+#define play 1
+#define pause 2
 
 // WAVE file header format
 typedef struct WAVHEADER {
@@ -85,20 +93,69 @@ void Init_Thread (void) {
 	
 	// Init threads
 	tid_ControlThread = osThreadCreate (osThread(ControlThread), NULL);
-	tid_PlayThread = osThreadCreate (osThread(PlayThread), NULL);
+	tid_SMThread = osThreadCreate (osThread(SMThread), NULL);
+	tid_USBThread = osThreadCreate (osThread(USBThread), NULL);
 	
 	// Init Message queues and semaphore
 	Sem_id = osSemaphoreCreate(osSemaphore(Sem), 0);
 	mid_MsqQueue = osMessageCreate(osMessageQ(MsgQueue), NULL);
 	mid_ControlMsqQueue = osMessageCreate(osMessageQ(ControlMsgQueue), NULL);
+	mid_SMMsqQueue = osMessageCreate(osMessageQ(SMMsgQueue), NULL);
+
 	
   if (!tid_ControlThread) return;
-	if (!tid_PlayThread) return;
+	if (!tid_SMThread) return;
+	if (!tid_USBThread) return;
 	
 	LED_On(0);
 }
 
 void ControlThread (void const *argument) {
+	while(1)
+	{	
+		//Receive Action
+		char r_data;
+		UART_receive(&r_data, 1);
+		
+		char action = r_data;
+		
+		if(action == 'R')
+		{
+			osMessagePut(mid_SMMsqQueue, getFiles, osWaitForever);
+		}
+		else if(action == 'P')
+		{
+			UART_send("P/n",2);
+			UART_receive(&song, 1);
+			osMessagePut(mid_ControlMsqQueue, play, osWaitForever);
+		}
+		else if(action == 'S')
+		{
+			osMessagePut(mid_ControlMsqQueue, pause, osWaitForever);
+		}
+	}
+}
+
+void SMThread(void const *argument)
+{
+	while(1)
+	{
+		osEvent event;
+		event = osMessageGet(mid_ControlMsqQueue, osWaitForever);
+		
+		if(event.value.v == play)
+		{
+			osMessagePut(mid_SMMsqQueue, play, osWaitForever);
+		}
+		else if(event.value.v == pause)
+		{
+			osMessagePut(mid_SMMsqQueue, pause, osWaitForever);
+		}
+	}
+}
+
+void USBThread (void const *argument) 
+{
 	usbStatus ustatus; // USB driver status variable
 	uint8_t drivenum = 0; // Using U0: drive number
 	char *drive_name = "U0:"; // USB drive name
@@ -136,18 +193,18 @@ void ControlThread (void const *argument) {
 	rtrn = BSP_AUDIO_OUT_Init(OUTPUT_DEVICE_AUTO, 0x46, 44100);
 	if (rtrn != AUDIO_OK)return;
 	
+	WAVHEADER header;
+	
 	while(1)
-	{	
-		//Receive Action
-		char r_data;
-		UART_receive(&r_data, 1);
+	{
+		osEvent event;
+		event = osMessageGet(mid_SMMsqQueue, osWaitForever);
 		
-		char action = r_data;
-		
-		if(action == getFiles)
+		if(event.status == osEventMessage)
 		{
-			int index = 0;
-			if(!strcmp(&r_data,"R")){
+			if(event.value.v == getFiles)
+			{
+				int index = 0;
 				while (ffind ("U0:*.*", &info) == fsOK) 
 				{ 
 					UART_send(info.name,strlen(info.name));
@@ -157,35 +214,9 @@ void ControlThread (void const *argument) {
 				}
 				UART_send("E",1);
 			}
-		}
-		else if(action == play)
-		{
-			UART_send("P/n",2);
-			char songName[15];
-			UART_receive(songName, 1);
-			osMessagePut(mid_ControlMsqQueue, (uint32_t)songName, osWaitForever);
-		}
-		else if(action == pause)
-		{
-			osMessagePut(mid_ControlMsqQueue, (uint32_t)'S', osWaitForever);
-		}
-	}
-}
-
-void PlayThread (void const *argument) 
-{
-	WAVHEADER header;
-	
-	while(1)
-	{
-		osEvent event;
-		event = osMessageGet(mid_ControlMsqQueue, 0);
-		
-		if(event.status == osEventMessage)
-		{
-			if(event.value.v != (uint32_t)'S')
+			else if(event.value.v == play || event.value.v == pause)
 			{
-				f = fopen (names[event.value.v],"r"); // open a file on the USB device
+				f = fopen (names[(uint32_t)song],"r"); // open a file on the USB device
 				if (f != NULL) {
 					fread((void *)&header, sizeof(header), 1, f);
 				} // end if file opened
@@ -195,26 +226,37 @@ void PlayThread (void const *argument)
 
 				while(!feof(f))
 				{
-					if(buf2use == 1)
+					osEvent temp = osMessageGet(mid_SMMsqQueue, 0);
+					if(temp.status == osEventMessage)
 					{
-						fread((void *)Audio_Buffer1, 2*BUF_LEN, 1, f);
-						osMessagePut(mid_MsqQueue, buf2use, osWaitForever);
-						buf2use = 2;
+						event = temp;
 					}
-					else
+					
+					if(event.value.v == play)
 					{
-						fread((void *)Audio_Buffer2, 2*BUF_LEN, 1, f);
-						osMessagePut(mid_MsqQueue, buf2use, osWaitForever);
-						buf2use = 1;
+						if(buf2use == 1)
+						{
+							fread((void *)Audio_Buffer1, 2*BUF_LEN, 1, f);
+							osMessagePut(mid_MsqQueue, buf2use, osWaitForever);
+							buf2use = 2;
+						}
+						else
+						{
+							fread((void *)Audio_Buffer2, 2*BUF_LEN, 1, f);
+							osMessagePut(mid_MsqQueue, buf2use, osWaitForever);
+							buf2use = 1;
+						}
+						osSemaphoreWait(Sem_id, osWaitForever);
 					}
-					osSemaphoreWait(Sem_id, osWaitForever);
+					else if(event.value.v == pause)
+					{
+						BSP_AUDIO_OUT_Pause();
+						BSP_AUDIO_OUT_SetMute(AUDIO_MUTE_ON);
+					}
 				}
 				BSP_AUDIO_OUT_SetMute(AUDIO_MUTE_ON);
+				fclose(f);
 			}
-		}
-		else
-		{
-			osThreadYield();
 		}
 	}
 }
