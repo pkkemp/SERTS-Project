@@ -63,11 +63,15 @@ Public Class Form1
         SerialPort1.Write(TrackNames.SelectedIndex.ToString())
     End Sub
     Private Sub playBtn_Click(sender As Object, e As EventArgs) Handles playBtn.Click
-        Dim str
+        Dim str = ""
+        Dim _continue As Boolean = True
         SerialPort1.Write(play, 0, 1)
         Do
-            str = SerialPort1.ReadLine()
-            If (str() = play) Then SerialPort1.Write(TrackNames.SelectedIndex.ToString(), 0, 1)
+            Try
+                str = SerialPort1.ReadLine()
+                If (str = play) Then SerialPort1.Write(TrackNames.SelectedIndex.ToString(), 0, 1)
+            Catch exc As Exception
+            End Try
         Loop Until str = play
 
         'Instruct board to pause playback
