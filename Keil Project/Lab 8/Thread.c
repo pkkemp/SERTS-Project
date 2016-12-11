@@ -86,154 +86,173 @@ typedef struct WAVHEADER {
 } WAVHEADER;
 
 void Init_Thread (void) {
-	
 	// Init LED and UART
 	LED_Initialize();
 	UART_Init();
-	
+
 	// Init threads
 	tid_ControlThread = osThreadCreate (osThread(ControlThread), NULL);
 	tid_SMThread = osThreadCreate (osThread(SMThread), NULL);
 	tid_USBThread = osThreadCreate (osThread(USBThread), NULL);
-	
+
 	// Init Message queues and semaphore
 	Sem_id = osSemaphoreCreate(osSemaphore(Sem), 0);
 	mid_MsqQueue = osMessageCreate(osMessageQ(MsgQueue), NULL);
 	mid_ControlMsqQueue = osMessageCreate(osMessageQ(ControlMsgQueue), NULL);
 	mid_SMMsqQueue = osMessageCreate(osMessageQ(SMMsgQueue), NULL);
 
-	
   if (!tid_ControlThread) return;
 	if (!tid_SMThread) return;
 	if (!tid_USBThread) return;
-	
+
 	LED_On(0);
 }
 
 void ControlThread (void const *argument) {
-	while(1)
-	{	
-		//Receive Action
-		char r_data;
-		UART_receive(&r_data, 1);
-		
-		char action = r_data;
-		
-		if(action == 'R')
-		{
-			osMessagePut(mid_SMMsqQueue, getFiles, osWaitForever);
-		}
-		else if(action == 'P')
-		{
-			UART_send("P/n",2);
-			UART_receive(&song, 1);
-			osMessagePut(mid_ControlMsqQueue, play, osWaitForever);
-		}
-		else if(action == 'S')
-		{
-			osMessagePut(mid_ControlMsqQueue, pause, osWaitForever);
-		}
-	}
+  while(1)
+  {
+    //Receive Action
+    char r_data;
+    UART_receive(&r_data, 1);
+
+    // Store Action
+    char action = r_data;
+
+    // Determine event based on action
+    if(action == 'R') {
+       // Send message to SM thread to send files to VB
+  	   osMessagePut(mid_SMMsqQueue, getFiles, osWaitForever);
+    }
+    else if(action == 'P') {
+      // Send 'P' in reply
+    	UART_send("P/n",2);
+      // wait on song number and store in global
+    	UART_receive(&song, 1);
+      // send play message to USB thread
+    	osMessagePut(mid_ControlMsqQueue, play, osWaitForever);
+    }
+    else if(action == 'S') {
+       // Send pause message to USB thread
+  	   osMessagePut(mid_ControlMsqQueue, pause, osWaitForever);
+    }
+  }
 }
 
 void SMThread(void const *argument)
 {
-	while(1)
-	{
-		osEvent event;
-		event = osMessageGet(mid_ControlMsqQueue, osWaitForever);
-		
-		if(event.value.v == play)
-		{
-			osMessagePut(mid_SMMsqQueue, play, osWaitForever);
-		}
-		else if(event.value.v == pause)
-		{
-			osMessagePut(mid_SMMsqQueue, pause, osWaitForever);
-		}
-	}
+  while(1)
+  {
+    // Wait on event
+    osEvent event;
+    event = osMessageGet(mid_ControlMsqQueue, osWaitForever);
+
+    // Determine if play or pause
+    if(event.value.v == play) {
+      // Send play message to USB thread
+      osMessagePut(mid_SMMsqQueue, play, osWaitForever);
+    }
+    else if(event.value.v == pause) {
+      // Send pause message to USB thread
+  	  osMessagePut(mid_SMMsqQueue, pause, osWaitForever);
+    }
+  }
 }
 
-void USBThread (void const *argument) 
+void USBThread (void const *argument)
 {
-	usbStatus ustatus; // USB driver status variable
-	uint8_t drivenum = 0; // Using U0: drive number
-	char *drive_name = "U0:"; // USB drive name
-	fsStatus fstatus; // file system status variable
-	size_t rd;
-	uint32_t i;
-	static uint8_t rtrn = 0;
-	uint8_t rdnum = 1; // read buffer number
-	ustatus = USBH_Initialize (drivenum); // initialize the USB Host
-	
-	fsFileInfo info;
-	static FILE *f;
-	info.fileID = 0;
+  // Variables ----------------------------------------
+  usbStatus ustatus; // USB driver status variable
+  uint8_t drivenum = 0; // Using U0: drive number
+  char *drive_name = "U0:"; // USB drive name
+  fsStatus fstatus; // file system status variable
+  size_t rd;
+  uint32_t i;
+  static uint8_t rtrn = 0;
+  uint8_t rdnum = 1; // read buffer number
+  ustatus = USBH_Initialize (drivenum); // initialize the USB Host
 
-	if (ustatus == usbOK){
-		// loop until the device is OK, may be delay from Initialize
-		ustatus = USBH_Device_GetStatus (drivenum); // get the status of the USB device
-		while(ustatus != usbOK){
-			ustatus = USBH_Device_GetStatus (drivenum); // get the status of the USB device
-		}
-		// initialize the drive
-		fstatus = finit (drive_name);
-		if (fstatus != fsOK){
-			// handle the error, finit didn't work
-		} // end if
-		// Mount the drive
-		fstatus = fmount (drive_name);
-		if (fstatus != fsOK){
-			// handle the error, fmount didn't work
-		} // end if
-		// file system and drive are good to go
-	} // end if USBH_Initialize
+  // File variables -------------------------------
+  fsFileInfo info;
+  static FILE *f;
+  info.fileID = 0;
 
-	// initialize the audio output
+  // Init USB ------------------------------------
+  if (ustatus == usbOK){
+  // loop until the device is OK, may be delay from Initialize
+    ustatus = USBH_Device_GetStatus (drivenum); // get the status of the USB device
+    while(ustatus != usbOK){
+  	   ustatus = USBH_Device_GetStatus (drivenum); // get the status of the USB device
+    }
+    // initialize the drive
+    fstatus = finit (drive_name);
+    if (fstatus != fsOK){
+  	   // handle the error, finit didn't work
+    } // end if
+    // Mount the drive
+    fstatus = fmount (drive_name);
+    if (fstatus != fsOK){
+  	   // handle the error, fmount didn't work
+    } // end if
+    // file system and drive are good to go
+  } // end if USBH_Initialize
+
+	// initialize the audio output -----------------------------
 	rtrn = BSP_AUDIO_OUT_Init(OUTPUT_DEVICE_AUTO, 0x46, 44100);
 	if (rtrn != AUDIO_OK)return;
-	
+
 	WAVHEADER header;
-	
+
+  // Infinite while for play/pause
 	while(1)
 	{
+    // Wait in new event
 		osEvent event;
 		event = osMessageGet(mid_SMMsqQueue, osWaitForever);
-		
+
+    // Check if event occured
 		if(event.status == osEventMessage)
 		{
+      // check if getFiles or play/pause
 			if(event.value.v == getFiles)
 			{
+        // Send file names and store in global array
 				int index = 0;
-				while (ffind ("U0:*.*", &info) == fsOK) 
-				{ 
+				while (ffind ("U0:*.*", &info) == fsOK)
+				{
 					UART_send(info.name,strlen(info.name));
 					strcpy(names[index], info.name);
 					UART_send("\n\r",2);
 					index++;
 				}
+        // Send finish message to VB
 				UART_send("E",1);
 			}
 			else if(event.value.v == play || event.value.v == pause)
 			{
+        // Open new file
 				f = fopen (names[(uint32_t)song],"r"); // open a file on the USB device
 				if (f != NULL) {
 					fread((void *)&header, sizeof(header), 1, f);
 				} // end if file opened
-					
+
+        // Begin playing
 				fread((void *)Audio_Buffer1, BUF_LEN, 1, f);
 				BSP_AUDIO_OUT_Play((uint16_t *)Audio_Buffer1, 2*BUF_LEN*2);
 
+        // Start sending data to buffers
 				while(!feof(f))
 				{
+          // Check for new message
 					osEvent temp = osMessageGet(mid_SMMsqQueue, 0);
-					if(temp.status == osEventMessage)
-					{
+
+          // Set event to new message if occurs
+					if(temp.status == osEventMessage) {
 						event = temp;
 					}
-					
+
 					if(event.value.v == play)
 					{
+            // If playing send data
 						if(buf2use == 1)
 						{
 							fread((void *)Audio_Buffer1, 2*BUF_LEN, 1, f);
@@ -250,10 +269,13 @@ void USBThread (void const *argument)
 					}
 					else if(event.value.v == pause)
 					{
+            // if pause stop sending and pause
 						BSP_AUDIO_OUT_Pause();
 						BSP_AUDIO_OUT_SetMute(AUDIO_MUTE_ON);
 					}
 				}
+
+        // Close file and mute at end of song
 				BSP_AUDIO_OUT_SetMute(AUDIO_MUTE_ON);
 				fclose(f);
 			}
