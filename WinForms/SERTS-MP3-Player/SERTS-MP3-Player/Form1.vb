@@ -28,6 +28,7 @@ Public Class Form1
         Catch
             MessageBox.Show("Failed to open serial port", "Audio Player",
            MessageBoxButtons.OKCancel, MessageBoxIcon.Asterisk)
+            Process.GetCurrentProcess.Kill()
             ' Console.WriteLine("Failed to open serial port") this is old code
         End Try
         'Thread_0 initialize
