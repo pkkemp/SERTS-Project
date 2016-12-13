@@ -24,3 +24,15 @@
 *.s.*
 *.h.*
 *.c.*
+
+#VB Ignores
+[Bb]in/
+[Oo]bj/
+!/lib
+*.user
+*.sln.cache
+*.suo
+*.xap
+*.vspcc
+*.vscc
+*.vssscc

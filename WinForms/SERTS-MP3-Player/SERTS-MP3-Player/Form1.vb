@@ -28,6 +28,7 @@ Public Class Form1
         Catch
             MessageBox.Show("Failed to open serial port", "Audio Player",
            MessageBoxButtons.OKCancel, MessageBoxIcon.Asterisk)
+            Process.GetCurrentProcess.Kill()
             ' Console.WriteLine("Failed to open serial port") this is old code
         End Try
         'Thread_0 initialize
@@ -63,16 +64,21 @@ Public Class Form1
         SerialPort1.Write(TrackNames.SelectedIndex.ToString())
     End Sub
     Private Sub playBtn_Click(sender As Object, e As EventArgs) Handles playBtn.Click
-        If playBtn.Text = "Play" Then
-            'Change GUI button to paused
-            playBtn.Text = "Pause"
-            'Instruct board to pause playback
-            SerialPort1.Write(pause, 0, 1)
-        Else
-            'Change GUI button to play
-            playBtn.Text = "Play"
-            'Instruct the board to resume playback
-            SerialPort1.Write(play, 0, 1)
-        End If
+        Dim str = ""
+        Dim _continue As Boolean = True
+        SerialPort1.Write(play, 0, 1)
+        Do
+            Try
+                str = SerialPort1.ReadLine()
+                If (str = play) Then SerialPort1.Write(TrackNames.SelectedIndex.ToString(), 0, 1)
+            Catch exc As Exception
+            End Try
+        Loop Until str = play
+
+        'Instruct board to pause playback
+    End Sub
+
+    Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
+        SerialPort1.Write(pause, 0, 1)
     End Sub
 End Class
